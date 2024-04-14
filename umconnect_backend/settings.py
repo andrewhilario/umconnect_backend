@@ -123,7 +123,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = "umconnect_backend.wsgi.application"
+WSGI_APPLICATION = "umconnect_backend.wsgi.app"
 
 
 # Database
