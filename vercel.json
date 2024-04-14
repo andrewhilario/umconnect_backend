@@ -1,16 +1,18 @@
 {
-  "version": 2,
   "builds": [
     {
       "src": "umconnect_backend/wsgi.py",
       "use": "@vercel/python",
-      "config": { "maxLambdaSize": "15mb" }
+      "config": {
+        "maxLambdaSize": "15mb",
+        "runtime": "python3.9"
+      }
     }
   ],
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "/umconnect_backend/wsgi.py"
+      "dest": "umconnect_backend/wsgi.py"
     }
   ]
 }
