@@ -14,6 +14,15 @@ import os
 from pathlib import Path
 from os import getenv
 from dotenv import load_dotenv
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
+
+cloudinary.config(
+    cloud_name="umconnect",
+    api_key="571987654838313",
+    api_secret="a7EeRsDe-GNk1yAe48daKBbPkdU",
+)
 
 load_dotenv()
 
@@ -195,4 +204,7 @@ STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles_build")
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 
-CORS_ALLOw_ALL_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = True
+
+
+DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"

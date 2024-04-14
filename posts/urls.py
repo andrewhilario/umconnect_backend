@@ -5,6 +5,11 @@ from . import views
 urlpatterns = [
     path("", views.GetAllPostsView.as_view(), name="list_posts"),
     path("user/", views.GetPostByUserView.as_view(), name="list_posts_by_user"),
+    path(
+        "user/shared-posts/",
+        views.GetSharedPostByUser.as_view(),
+        name="list_shared_posts_by_user",
+    ),
     path("create/", views.CreatePostView.as_view(), name="create_post"),
     path(
         "<int:pk>/",

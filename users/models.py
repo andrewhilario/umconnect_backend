@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth import models as auth_models
 from django.contrib.auth.models import User
+from cloudinary.models import CloudinaryField
 
 
 class UserManager(auth_models.BaseUserManager):
@@ -74,9 +75,7 @@ class UserModel(auth_models.AbstractUser):
     date_of_birth = models.DateField()
     phone_number = models.CharField(max_length=15)
     bio = models.TextField()
-    profile_picture = models.ImageField(
-        upload_to="profile_pictures/", blank=True, null=True
-    )
+    profile_picture = CloudinaryField("image", blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     is_active = models.BooleanField(default=True)

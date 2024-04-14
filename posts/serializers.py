@@ -1,6 +1,12 @@
 from rest_framework import serializers
 
-from .models import CommentModel, PostModel, ShareModel
+from .models import (
+    CommentModel,
+    PostModel,
+    ShareModel,
+    ShareCommentModel,
+    ShareLikeModel,
+)
 from users.serializers import UserModelSerializer
 from users.models import UserModel
 
@@ -67,9 +73,40 @@ class CommentSerializer(serializers.ModelSerializer):
         ]
 
 
+class ShareCommentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ShareCommentModel
+        fields = "__all__"
+
+
+class ShareLikeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ShareLikeModel
+        fields = "__all__"
+
+
+class SharePostSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = PostModel
+        fields = [
+            "content",
+            "is_shared",
+            "user",
+            "created_at",
+            "updated_at",
+            "post_image",
+        ]
+
+
 class ShareSerializer(serializers.ModelSerializer):
     user = UserSerializerForShareAndComments(read_only=True)
     share_content = serializers.CharField(required=False, allow_blank=True)
+    post = SharePostSerializer(read_only=True)
+    likes = ShareLikeSerializer(many=True, source="sharelikemodel_set", read_only=True)
+    comments = ShareCommentSerializer(
+        many=True, source="sharecommentmodel_set", read_only=True
+    )
 
     class Meta:
         model = ShareModel
@@ -78,6 +115,9 @@ class ShareSerializer(serializers.ModelSerializer):
             "share_content",
             "created_at",
             "updated_at",
+            "post",
+            "likes",
+            "comments",
         ]
 
 

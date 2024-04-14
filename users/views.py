@@ -5,6 +5,7 @@ from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.response import Response
 from rest_framework.generics import get_object_or_404
+from rest_framework.parsers import MultiPartParser, FormParser
 
 # Serializers
 from .serializers import CreateUserSerializer, UserModelSerializer
@@ -27,8 +28,9 @@ class SignUpView(APIView):
 
 
 class UpdateUserView(ModelViewSet):
-    serializer_class = CreateUserSerializer
+    serializer_class = UserModelSerializer
     queryset = UserModel.objects.all()
+    parser_classes = [MultiPartParser, FormParser]
 
     def retrieve(self, request, pk=None):
         user = get_object_or_404(self.queryset, pk=pk)
@@ -38,6 +40,16 @@ class UpdateUserView(ModelViewSet):
     def partial_update(self, request, pk=None):
         user = get_object_or_404(self.queryset, pk=pk)
         serializer = self.serializer_class(user, data=request.data, partial=True)
+
+        if "profile_picture" in request.FILES:
+            file = request.FILES["profile_picture"]
+            max_size_mb = 2
+            if file.size > max_size_mb * 1024 * 1024:
+                return Response(
+                    {"error": f"File size should not exceed {max_size_mb}MB"},
+                    status=400,
+                )
+
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=200)

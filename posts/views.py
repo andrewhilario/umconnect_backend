@@ -27,6 +27,15 @@ class CreatePostView(APIView):
         if user.is_authenticated:
             serializer = self.serializer_class(data=request.data)
 
+            if "post_image" in request.FILES:
+                file = request.FILES["post_image"]
+                max_size_mb = 2
+                if file.size > max_size_mb * 1024 * 1024:
+                    return Response(
+                        {"error": f"File size should not exceed {max_size_mb}MB"},
+                        status=400,
+                    )
+
             if serializer.is_valid():
                 serializer.save(user=user)
                 return Response(serializer.data, status=201)
@@ -122,6 +131,16 @@ class CommentPostView(APIView):
         user = request.user
 
         serializer = self.serializer_class(data=request.data)
+
+        if "comment_image" in request.FILES:
+            file = request.FILES["comment_image"]
+            max_size_mb = 2
+            if file.size > max_size_mb * 1024 * 1024:
+                return Response(
+                    {"error": f"File size should not exceed {max_size_mb}MB"},
+                    status=400,
+                )
+
         if serializer.is_valid():
             comments = CommentModel.objects.create(
                 user=user,
@@ -159,3 +178,27 @@ class SharePostView(APIView):
                 shares.save()
             return Response(serializer.data, status=201)
         return Response(serializer.errors, status=400)
+
+
+class GetSharedPostByUser(generics.ListAPIView):
+    serializer_class = serializers.ShareSerializer
+    permission_classes = [IsAuthenticated]
+    pagination_class = PageNumberPagination
+
+    def get_queryset(self):
+        user = self.request.user
+        return ShareModel.objects.filter(user=user)
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.serializer_class(
+                page, many=True, context={"request": request}
+            )
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.serializer_class(
+            queryset, many=True, context={"request": request}
+        )
+        return Response(serializer.data)
