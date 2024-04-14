@@ -1,1 +1,0 @@
-web: gunicorn 'umconnect_backend.wsgi'
