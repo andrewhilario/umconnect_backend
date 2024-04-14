@@ -30,6 +30,7 @@ inflection==0.5.1
 kombu==5.2.4
 oauthlib==3.2.2
 packaging==23.1
+pillow==10.3.0
 prometheus_client==0.20.0
 prompt-toolkit==3.0.38
 psycopg2==2.9.9
