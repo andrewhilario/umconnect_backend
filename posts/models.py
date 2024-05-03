@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.postgres.fields import ArrayField
 
 from users.models import UserModel
 from cloudinary.models import CloudinaryField
@@ -7,9 +8,16 @@ from cloudinary.models import CloudinaryField
 
 
 class PostModel(models.Model):
+    POST_TYPE = (
+        ("PUBLIC", "Public"),
+        ("PRIVATE", "Private"),
+        ("FRIENDS", "Friends"),
+    )
+
     user = models.ForeignKey(UserModel, on_delete=models.CASCADE)
     content = models.TextField()
-    post_image = CloudinaryField("post_image", blank=True, null=True)
+    post_image = models.CharField(max_length=1000, blank=True, null=True)
+    post_type = models.CharField(max_length=10, choices=POST_TYPE, default="PUBLIC")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     is_shared = models.BooleanField(default=False)

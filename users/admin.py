@@ -17,4 +17,9 @@ class UserModelAdmin(admin.ModelAdmin):
     ]
 
 
+class FriendsAdmin(admin.ModelAdmin):
+    list_display = ["user", "friend"]
+
+
 admin.site.register(UserModel, UserModelAdmin)
+admin.site.register(Friends, FriendsAdmin)

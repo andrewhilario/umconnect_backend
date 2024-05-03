@@ -39,7 +39,13 @@ SECRET_KEY = "django-insecure-6mkmujmhf7-9t704u15zqu8xxi6ddfe6%w8p%lmp2j8^11(5o%
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["127.0.0.1", ".vercel.app", ".now.sh"]
+ALLOWED_HOSTS = [
+    "127.0.0.1",
+    ".vercel.app",
+    ".now.sh",
+    "localhost",
+    "umconnect.herokuapp.com",
+]
 
 
 # Application definition
@@ -58,6 +64,8 @@ INSTALLED_APPS = [
     "corsheaders",
     "users",
     "posts",
+    "reels",
+    "stories",
 ]
 
 REST_FRAMEWORK = {
@@ -70,7 +78,7 @@ REST_FRAMEWORK = {
 AUTH_USER_MODEL = "users.UserModel"
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
+    "ACCESS_TOKEN_LIFETIME": timedelta(days=1),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=90),
     "ROTATE_REFRESH_TOKENS": True,
     "BLACKLIST_AFTER_ROTATION": False,

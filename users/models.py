@@ -75,7 +75,7 @@ class UserModel(auth_models.AbstractUser):
     date_of_birth = models.DateField()
     phone_number = models.CharField(max_length=15)
     bio = models.TextField()
-    profile_picture = CloudinaryField("image", blank=True, null=True)
+    profile_picture = models.CharField(max_length=255, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     is_active = models.BooleanField(default=True)
@@ -83,6 +83,7 @@ class UserModel(auth_models.AbstractUser):
     is_superuser = models.BooleanField(default=False)
     is_verified = models.BooleanField(default=False)
     role = models.CharField(max_length=150, null=True, blank=True)
+    cover_photo = models.CharField(max_length=255, blank=True, null=True)
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = [
@@ -114,3 +115,14 @@ class UserModel(auth_models.AbstractUser):
 
     def __str__(self):
         return self.email
+
+
+class Friends(models.Model):
+    user = models.ForeignKey(UserModel, on_delete=models.CASCADE, related_name="user")
+    friend = models.ForeignKey(
+        UserModel, on_delete=models.CASCADE, related_name="friend"
+    )
+    added_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user} is friends with {self.friend}"

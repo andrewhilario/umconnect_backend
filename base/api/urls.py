@@ -15,4 +15,6 @@ urlpatterns = [
     path("token/verify/", TokenVerifyView.as_view(), name="token_verify"),
     path("users/", include("users.urls")),
     path("posts/", include("posts.urls")),
+    path("reels/", include("reels.urls")),
+    path("stories/", include("stories.urls")),
 ]

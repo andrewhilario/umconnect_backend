@@ -1,8 +1,9 @@
 from rest_framework import serializers
-from .models import UserModel
+from .models import Friends, UserModel
 
 
 class UserModelSerializer(serializers.ModelSerializer):
+
     class Meta:
         model = UserModel
         fields = [
@@ -21,6 +22,7 @@ class UserModelSerializer(serializers.ModelSerializer):
             "is_staff",
             "is_superuser",
             "is_verified",
+            "cover_photo",
         ]
 
 
@@ -41,3 +43,37 @@ class CreateUserSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         # The UserManager is automatically used by the ModelSerializer
         return UserModel.objects.create_user(**validated_data)
+
+
+class FriendSerializer(serializers.ModelSerializer):
+    friend = UserModelSerializer(read_only=True)
+
+    class Meta:
+        model = Friends
+        fields = ["friend", "added_at"]
+
+
+class UserSerializer(serializers.ModelSerializer):
+    friends = FriendSerializer(many=True, source="user_set", read_only=True)
+
+    class Meta:
+        model = UserModel
+        fields = [
+            "id",
+            "email",
+            "username",
+            "first_name",
+            "last_name",
+            "date_of_birth",
+            "phone_number",
+            "bio",
+            "profile_picture",
+            "created_at",
+            "updated_at",
+            "is_active",
+            "is_staff",
+            "is_superuser",
+            "is_verified",
+            "cover_photo",
+            "friends",
+        ]

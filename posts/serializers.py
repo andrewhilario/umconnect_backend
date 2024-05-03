@@ -14,7 +14,6 @@ from users.models import UserModel
 
 
 class CreatePostSerializer(serializers.ModelSerializer):
-    post_image = serializers.ImageField(required=False)
     user = UserModelSerializer(read_only=True)
     is_shared = serializers.BooleanField(required=False)
 
@@ -25,13 +24,13 @@ class CreatePostSerializer(serializers.ModelSerializer):
             "user",
             "created_at",
             "updated_at",
-            "post_image",
             "is_shared",
+            "post_type",
+            "post_image",
         ]
 
 
 class UpdatePostSerializer(serializers.ModelSerializer):
-    post_image = serializers.ImageField(required=False)
 
     user = UserModelSerializer(read_only=True)
 
@@ -95,14 +94,12 @@ class SharePostSerializer(serializers.ModelSerializer):
             "user",
             "created_at",
             "updated_at",
-            "post_image",
         ]
 
 
 class ShareSerializer(serializers.ModelSerializer):
     user = UserSerializerForShareAndComments(read_only=True)
     share_content = serializers.CharField(required=False, allow_blank=True)
-    post = SharePostSerializer(read_only=True)
     likes = ShareLikeSerializer(many=True, source="sharelikemodel_set", read_only=True)
     comments = ShareCommentSerializer(
         many=True, source="sharecommentmodel_set", read_only=True
@@ -115,7 +112,6 @@ class ShareSerializer(serializers.ModelSerializer):
             "share_content",
             "created_at",
             "updated_at",
-            "post",
             "likes",
             "comments",
         ]
@@ -125,6 +121,7 @@ class UserSerializerForPost(serializers.ModelSerializer):
     class Meta:
         model = UserModel
         fields = [
+            "id",
             "first_name",
             "last_name",
             "username",
@@ -142,13 +139,15 @@ class PostSerializer(serializers.ModelSerializer):
     class Meta:
         model = PostModel
         fields = [
+            "id",
             "content",
+            "post_type",
             "is_shared",
             "user",
             "created_at",
             "updated_at",
-            "post_image",
             "comments",
             "likes",
             "shares",
+            "post_image",
         ]

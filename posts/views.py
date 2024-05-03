@@ -1,3 +1,4 @@
+import json
 from django.shortcuts import render
 
 # REST Framework
@@ -15,6 +16,7 @@ from .serializers import CreatePostSerializer, PostSerializer, UpdatePostSeriali
 # Models
 from .models import PostModel, LikeModel, CommentModel, ShareModel
 from posts import serializers
+import cloudinary.uploader
 
 
 # Create your views here.
@@ -24,22 +26,45 @@ class CreatePostView(APIView):
 
     def post(self, request):
         user = request.user
+
         if user.is_authenticated:
-            serializer = self.serializer_class(data=request.data)
 
             if "post_image" in request.FILES:
-                file = request.FILES["post_image"]
+
+                files = request.FILES.getlist("post_image")
                 max_size_mb = 2
-                if file.size > max_size_mb * 1024 * 1024:
-                    return Response(
-                        {"error": f"File size should not exceed {max_size_mb}MB"},
-                        status=400,
-                    )
+                for file in files:
+                    if file.size > max_size_mb * 1024 * 1024:
+                        return Response(
+                            {"error": f"File size should not exceed {max_size_mb}MB"},
+                            status=400,
+                        )
+
+                image_urls = []
+                for file in files:
+                    upload_data = cloudinary.uploader.upload(file)
+                    url = upload_data["url"]
+                    image_urls.append(url)
+                print("image_urls", image_urls)
+
+                image_urls_json = json.dumps(image_urls)
+                request.data["post_image"] = image_urls_json
+
+            serializer = self.serializer_class(data=request.data)
 
             if serializer.is_valid():
                 serializer.save(user=user)
-                return Response(serializer.data, status=201)
+
+                return Response(
+                    {"post": serializer.data},
+                    status=201,
+                )
+
             return Response(serializer.errors, status=400)
+
+        else:
+            print("User not authenticated")
+        return Response({"error": "No image files provided"}, status=400)
 
 
 class UpdateAndGetPostByIdView(ModelViewSet):
@@ -73,7 +98,7 @@ class DeletePostByIdView(APIView):
 
 class GetAllPostsView(APIView):
     serializer_class = PostSerializer
-    queryset = PostModel.objects.all()
+    queryset = PostModel.objects.all().order_by("-created_at")
 
     def get(self, request):
         paginator = PageNumberPagination()
@@ -90,7 +115,39 @@ class GetPostByUserView(generics.ListAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        return PostModel.objects.filter(user=user).prefetch_related("likes")
+        return (
+            PostModel.objects.filter(user=user)
+            .prefetch_related("likes")
+            .order_by("-created_at")
+        )
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.serializer_class(
+                page, many=True, context={"request": request}
+            )
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.serializer_class(
+            queryset, many=True, context={"request": request}
+        )
+        return Response(serializer.data)
+
+
+class GetPostByUserIdView(generics.ListAPIView):
+    serializer_class = PostSerializer
+    permission_classes = [IsAuthenticated]
+    pagination_class = PageNumberPagination
+
+    def get_queryset(self):
+        user_id = self.kwargs.get("pk")
+        return (
+            PostModel.objects.filter(user=user_id)
+            .prefetch_related("likes")
+            .order_by("-created_at")
+        )
 
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
@@ -118,6 +175,19 @@ class LikePostView(APIView):
             post.likes.remove(user)
             return Response(status=204)
         post.likes.add(user)
+        return Response(status=204)
+
+
+class UnlikePostView(APIView):
+    queryset = PostModel.objects.all()
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, pk=None):
+        post = get_object_or_404(self.queryset, pk=pk)
+        user = request.user
+        if user in post.likes.all():
+            post.likes.remove(user)
+            return Response(status=204)
         return Response(status=204)
 
 

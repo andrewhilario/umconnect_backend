@@ -6,12 +6,21 @@ from rest_framework.viewsets import ModelViewSet
 from rest_framework.response import Response
 from rest_framework.generics import get_object_or_404
 from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.pagination import PageNumberPagination
+from rest_framework.permissions import IsAuthenticated
+import cloudinary.uploader
+
 
 # Serializers
-from .serializers import CreateUserSerializer, UserModelSerializer
+from .serializers import (
+    CreateUserSerializer,
+    UserModelSerializer,
+    FriendSerializer,
+    UserSerializer,
+)
 
 # Models
-from .models import UserModel
+from .models import UserModel, Friends
 
 
 class SignUpView(APIView):
@@ -32,13 +41,8 @@ class UpdateUserView(ModelViewSet):
     queryset = UserModel.objects.all()
     parser_classes = [MultiPartParser, FormParser]
 
-    def retrieve(self, request, pk=None):
-        user = get_object_or_404(self.queryset, pk=pk)
-        serializer = self.serializer_class(user)
-        return Response(serializer.data, status=200)
-
     def partial_update(self, request, pk=None):
-        user = get_object_or_404(self.queryset, pk=pk)
+        user = request.user
         serializer = self.serializer_class(user, data=request.data, partial=True)
 
         if "profile_picture" in request.FILES:
@@ -50,7 +54,111 @@ class UpdateUserView(ModelViewSet):
                     status=400,
                 )
 
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=200)
-        return Response(serializer.errors, status=400)
+            upload_data = cloudinary.uploader.upload(file)
+            user.profile_picture = upload_data["url"]
+
+        if "cover_photo" in request.FILES:
+            file = request.FILES["cover_photo"]
+            max_size_mb = 2
+            if file.size > max_size_mb * 1024 * 1024:
+                return Response(
+                    {"error": f"File size should not exceed {max_size_mb}MB"},
+                    status=400,
+                )
+
+            upload_data = cloudinary.uploader.upload(file)
+            user.cover_photo = upload_data["url"]
+
+        if "bio" in request.data:
+            if len(request.data["bio"]) > 200:
+                return Response(
+                    {"error": "Bio should not exceed 200 characters"}, status=400
+                )
+            user.bio = request.data["bio"]
+
+        # Handle first_name and last_name update
+        if "first_name" in request.data:
+            user.first_name = request.data["first_name"]
+
+        if "last_name" in request.data:
+            user.last_name = request.data["last_name"]
+
+        # Save user object
+
+        user.save()
+        return Response(
+            {
+                "message": "User updated successfully",
+                "user": UserModelSerializer(user).data,
+            },
+            status=200,
+        )
+
+
+class GetUserView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        serializer = UserSerializer(user)
+        return Response(serializer.data, status=200)
+
+
+class ViewUserView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        user = get_object_or_404(UserModel, pk=pk)
+        serializer = UserSerializer(user)
+        return Response(serializer.data, status=200)
+
+
+class AddandRemoveFriendView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        user = request.user
+        friend = get_object_or_404(UserModel, pk=pk)
+
+        if user == friend:
+            return Response(
+                {"error": "You cannot add yourself as a friend"}, status=400
+            )
+
+        if Friends.objects.filter(user=user, friend=friend).exists():
+            return Response({"error": "Friend already exists"}, status=400)
+
+        add_friend = Friends.objects.create(user=user, friend=friend)
+        add_friend.save()
+
+        return Response(
+            {
+                "message": "Friend added successfully",
+                "friend_id": FriendSerializer(add_friend).data,
+            },
+            status=201,
+        )
+
+    def delete(self, request, pk):
+        user = get_object_or_404(UserModel, pk=pk)
+        friend = get_object_or_404(UserModel, pk=request.data["friend_id"])
+        user.friends.remove(friend)
+        return Response({"message": "Friend removed successfully"}, status=200)
+
+
+class FriendsListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        friends = Friends.objects.filter(user=user)
+
+        paginator = PageNumberPagination()
+        paginator.page_size = 10
+        page = paginator.paginate_queryset(friends, request)
+        if page is not None:
+            serializer = FriendSerializer(page, many=True)
+            return paginator.get_paginated_response(serializer.data)
+
+        serializer = FriendSerializer(friends, many=True)
+        return Response(serializer.data, status=200)
