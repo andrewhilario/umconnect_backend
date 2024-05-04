@@ -126,3 +126,16 @@ class Friends(models.Model):
 
     def __str__(self):
         return f"{self.user} is friends with {self.friend}"
+
+
+class FriendRequests(models.Model):
+    sender = models.ForeignKey(
+        UserModel, on_delete=models.CASCADE, related_name="sender"
+    )
+    receiver = models.ForeignKey(
+        UserModel, on_delete=models.CASCADE, related_name="receiver"
+    )
+    sent_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.sender} sent a friend request to {self.receiver}"

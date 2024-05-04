@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Friends, UserModel
+from .models import Friends, UserModel, FriendRequests
 
 
 class UserModelSerializer(serializers.ModelSerializer):
@@ -51,6 +51,15 @@ class FriendSerializer(serializers.ModelSerializer):
     class Meta:
         model = Friends
         fields = ["friend", "added_at"]
+
+
+class FriendRequestSerializer(serializers.ModelSerializer):
+    sender = UserModelSerializer(read_only=True)
+    receiver = UserModelSerializer(read_only=True)
+
+    class Meta:
+        model = FriendRequests
+        fields = ["sender", "receiver", "sent_at"]
 
 
 class UserSerializer(serializers.ModelSerializer):

@@ -17,10 +17,11 @@ from .serializers import (
     UserModelSerializer,
     FriendSerializer,
     UserSerializer,
+    FriendRequestSerializer,
 )
 
 # Models
-from .models import UserModel, Friends
+from .models import UserModel, Friends, FriendRequests
 
 
 class SignUpView(APIView):
@@ -95,6 +96,22 @@ class UpdateUserView(ModelViewSet):
         )
 
 
+class GetAllUsersView(APIView):
+
+    def get(self, request):
+        users = UserModel.objects.all()
+
+        paginator = PageNumberPagination()
+        paginator.page_size = 10
+        page = paginator.paginate_queryset(users, request)
+        if page is not None:
+            serializer = UserSerializer(page, many=True)
+            return paginator.get_paginated_response(serializer.data)
+
+        serializer = UserSerializer(users, many=True)
+        return Response(serializer.data, status=200)
+
+
 class GetUserView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -109,6 +126,15 @@ class ViewUserView(APIView):
 
     def get(self, request, pk):
         user = get_object_or_404(UserModel, pk=pk)
+        serializer = UserSerializer(user)
+        return Response(serializer.data, status=200)
+
+
+class ViewUserByUsernameView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, username):
+        user = get_object_or_404(UserModel, username=username)
         serializer = UserSerializer(user)
         return Response(serializer.data, status=200)
 
@@ -144,6 +170,63 @@ class AddandRemoveFriendView(APIView):
         friend = get_object_or_404(UserModel, pk=request.data["friend_id"])
         user.friends.remove(friend)
         return Response({"message": "Friend removed successfully"}, status=200)
+
+
+class FriendRequestsListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        friend_requests = FriendRequests.objects.filter(receiver=user)
+
+        paginator = PageNumberPagination()
+        paginator.page_size = 10
+        page = paginator.paginate_queryset(friend_requests, request)
+        if page is not None:
+            serializer = FriendRequestSerializer(page, many=True)
+            return paginator.get_paginated_response(serializer.data)
+
+        serializer = FriendRequestSerializer(friend_requests, many=True)
+        return Response(serializer.data, status=200)
+
+
+class SendFriendRequestView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        user = request.user
+        friend = get_object_or_404(UserModel, pk=pk)
+
+        if user == friend:
+            return Response(
+                {"error": "You cannot send a friend request to yourself"}, status=400
+            )
+
+        if FriendRequests.objects.filter(sender=user, receiver=friend).exists():
+            return Response({"error": "Friend request already exists"}, status=400)
+
+        add_friend_request = FriendRequests.objects.create(sender=user, receiver=friend)
+        add_friend_request.save()
+
+        return Response(
+            {
+                "message": "Friend request sent successfully",
+                "friend_request_id": FriendRequestSerializer(add_friend_request).data,
+            },
+            status=201,
+        )
+
+
+class RemoveFriendRequestView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, pk):
+
+        friend_request = get_object_or_404(
+            FriendRequests, pk=request.data["friend_request_id"]
+        )
+        friend_request.delete()
+        return Response({"message": "Friend request removed successfully"}, status=200)
 
 
 class FriendsListView(APIView):
