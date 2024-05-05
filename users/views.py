@@ -231,9 +231,7 @@ class RemoveFriendRequestView(APIView):
 
     def delete(self, request, pk):
 
-        friend_request = get_object_or_404(
-            FriendRequests, pk=request.data["friend_request_id"]
-        )
+        friend_request = get_object_or_404(FriendRequests, pk=pk, sender=request.user)
         friend_request.delete()
         return Response({"message": "Friend request removed successfully"}, status=200)
 
