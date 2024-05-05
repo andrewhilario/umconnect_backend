@@ -157,6 +157,13 @@ class AddandRemoveFriendView(APIView):
         add_friend = Friends.objects.create(user=user, friend=friend)
         add_friend.save()
 
+        friend_request = FriendRequests.objects.filter(
+            sender=friend, receiver=user, is_accepted=False
+        )
+        if friend_request.exists():
+            friend_request.first().is_accepted = True
+            friend_request.first().save()
+
         return Response(
             {
                 "message": "Friend added successfully",
@@ -177,7 +184,9 @@ class FriendRequestsListView(APIView):
 
     def get(self, request):
         user = request.user
-        friend_requests = FriendRequests.objects.filter(receiver=user)
+        friend_requests = FriendRequests.objects.filter(
+            receiver=user, is_accepted=False
+        )
 
         paginator = PageNumberPagination()
         paginator.page_size = 10

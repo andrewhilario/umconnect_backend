@@ -136,6 +136,7 @@ class FriendRequests(models.Model):
         UserModel, on_delete=models.CASCADE, related_name="receiver"
     )
     sent_at = models.DateTimeField(auto_now_add=True)
+    is_accepted = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.sender} sent a friend request to {self.receiver}"
