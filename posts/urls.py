@@ -33,10 +33,21 @@ urlpatterns = [
         views.CommentPostView.as_view(),
         name="create_comment",
     ),
+    path("share-posts/", views.AllSharedPostsView.as_view(), name="share_post"),
     path(
         "<int:pk>/share/",
         views.SharePostView.as_view(),
         name="share_post",
+    ),
+    path(
+        "<int:pk>/share/like/",
+        views.LikeSharedPostView.as_view(),
+        name="like_shared_post",
+    ),
+    path(
+        "<int:pk>/share/comment/",
+        views.CommentSharedPostView.as_view(),
+        name="comment_shared_post",
     ),
     path(
         "delete/<int:pk>/",

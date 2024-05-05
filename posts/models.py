@@ -74,7 +74,6 @@ class ShareCommentModel(models.Model):
     user = models.ForeignKey(UserModel, on_delete=models.CASCADE)
     share = models.ForeignKey(ShareModel, on_delete=models.CASCADE)
     share_comment = models.TextField()
-    share_comment_image = CloudinaryField("share_comment_image", blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

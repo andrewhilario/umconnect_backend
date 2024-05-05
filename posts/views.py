@@ -11,10 +11,26 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework import generics
 
 # Serializers
-from .serializers import CreatePostSerializer, PostSerializer, UpdatePostSerializer
+from .serializers import (
+    CreatePostSerializer,
+    PostSerializer,
+    ShareCommentSerializer,
+    UpdatePostSerializer,
+    CommentSerializer,
+    ShareSerializer,
+    ShareLikeSerializer,
+    CreateShareCommentSerializer,
+)
 
 # Models
-from .models import PostModel, LikeModel, CommentModel, ShareModel
+from .models import (
+    PostModel,
+    LikeModel,
+    CommentModel,
+    ShareModel,
+    ShareLikeModel,
+    ShareCommentModel,
+)
 from posts import serializers
 import cloudinary.uploader
 
@@ -222,6 +238,18 @@ class CommentPostView(APIView):
         return Response(serializer.errors, status=400)
 
 
+class AllSharedPostsView(APIView):
+    serializer_class = serializers.ShareSerializer
+    queryset = ShareModel.objects.all().order_by("-created_at")
+
+    def get(self, request):
+        paginator = PageNumberPagination()
+        paginator.page_size = 5
+        posts = paginator.paginate_queryset(self.queryset, request)
+        serializer = self.serializer_class(posts, many=True)
+        return paginator.get_paginated_response(serializer.data)
+
+
 class SharePostView(APIView):
     queryset = PostModel.objects.all()
     permission_classes = [IsAuthenticated]
@@ -247,6 +275,47 @@ class SharePostView(APIView):
                 shares = ShareModel.objects.create(user=user, post=post)
                 shares.save()
             return Response(serializer.data, status=201)
+        return Response(serializer.errors, status=400)
+
+
+class LikeSharedPostView(APIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = serializers.ShareLikeSerializer
+
+    def patch(self, request, pk=None):
+        post = get_object_or_404(ShareModel.objects.all(), pk=pk)
+        user = request.user
+
+        if ShareLikeModel.objects.filter(user=user, share=post).exists():
+            liked = ShareLikeModel.objects.get(user=user, share=post)
+            liked.delete()
+            return Response({"message": "Shared Post unliked"}, status=200)
+
+        likes = ShareLikeModel.objects.create(user=user, share=post)
+        likes.save()
+        return Response({"message": "Shared Post liked"}, status=201)
+
+
+class CommentSharedPostView(APIView):
+    queryset = ShareModel.objects.all()
+    permission_classes = [IsAuthenticated]
+    serializer_class = serializers.CreateShareCommentSerializer
+
+    def patch(self, request, pk=None):
+        post = get_object_or_404(ShareModel.objects.all(), pk=pk)
+        user = request.user
+
+        serializer = self.serializer_class(data=request.data)
+
+        if serializer.is_valid():
+            comments = ShareCommentModel.objects.create(
+                user=user,
+                share=post,
+                share_comment=serializer.validated_data["share_comment"],
+            )
+            comments.save()
+            return Response(ShareCommentSerializer(comments).data, status=201)
+
         return Response(serializer.errors, status=400)
 
 

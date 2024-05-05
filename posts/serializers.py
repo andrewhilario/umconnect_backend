@@ -1,3 +1,4 @@
+from dataclasses import fields
 from rest_framework import serializers
 
 from .models import (
@@ -73,19 +74,39 @@ class CommentSerializer(serializers.ModelSerializer):
 
 
 class ShareCommentSerializer(serializers.ModelSerializer):
+    user = UserSerializerForShareAndComments(read_only=True)
+
     class Meta:
         model = ShareCommentModel
-        fields = "__all__"
+        fields = [
+            "id",
+            "user",
+            "share_comment",
+            "created_at",
+        ]
+
+
+class CreateShareCommentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ShareCommentModel
+        fields = [
+            "share_comment",
+        ]
 
 
 class ShareLikeSerializer(serializers.ModelSerializer):
+    user = UserSerializerForShareAndComments(read_only=True)
+
     class Meta:
         model = ShareLikeModel
-        fields = "__all__"
+        fields = [
+            "user",
+            "created_at",
+            "updated_at",
+        ]
 
 
 class SharePostSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = PostModel
         fields = [
@@ -108,6 +129,7 @@ class ShareSerializer(serializers.ModelSerializer):
     class Meta:
         model = ShareModel
         fields = [
+            "id",
             "user",
             "share_content",
             "created_at",
