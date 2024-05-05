@@ -63,7 +63,8 @@ class FriendRequestSerializer(serializers.ModelSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
-    friends = FriendSerializer(many=True, source="user_set", read_only=True)
+    friends = FriendSerializer(many=True, read_only=True)
+    friend_requests = FriendRequestSerializer(many=True, read_only=True)
 
     class Meta:
         model = UserModel
@@ -85,4 +86,15 @@ class UserSerializer(serializers.ModelSerializer):
             "is_verified",
             "cover_photo",
             "friends",
+            "friend_requests",
         ]
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation["friends"] = FriendSerializer(
+            instance.user.all(), many=True
+        ).data
+        representation["friend_requests"] = FriendRequestSerializer(
+            instance.receiver.all(), many=True
+        ).data
+        return representation
