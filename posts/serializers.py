@@ -118,7 +118,16 @@ class SharePostSerializer(serializers.ModelSerializer):
         ]
 
 
+class IsSharedPostSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PostModel
+        fields = [
+            "id",
+        ]
+
+
 class ShareSerializer(serializers.ModelSerializer):
+    post = IsSharedPostSerializer(read_only=True)
     user = UserSerializerForShareAndComments(read_only=True)
     share_content = serializers.CharField(required=False, allow_blank=True)
     likes = ShareLikeSerializer(many=True, source="sharelikemodel_set", read_only=True)
@@ -136,6 +145,7 @@ class ShareSerializer(serializers.ModelSerializer):
             "updated_at",
             "likes",
             "comments",
+            "post",
         ]
 
 
