@@ -9,6 +9,8 @@ from rest_framework.permissions import IsAuthenticated
 import cloudinary.uploader
 from operator import attrgetter
 from itertools import groupby
+from datetime import timedelta
+from django.utils import timezone
 
 
 class GetAllStoriesView(APIView):
@@ -63,3 +65,11 @@ class CreateStoryView(APIView):
             serializer.save(user=request.user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class DeleteStoriesAfter24Hours(APIView):
+    def get(self, request):
+        Stories.objects.filter(
+            created_at__lte=timezone.now() - timedelta(days=1)
+        ).delete()
+        return Response({"message": "Stories older than 24 hours have been deleted."})
