@@ -80,5 +80,5 @@ class DeleteStoriesAfter24Hours(APIView):
 
         return Response(
             {"message": "No stories older than 24 hours found"},
-            status=status.HTTP_404_NOT_FOUND,
+            status=status.HTTP_200_OK,
         )
