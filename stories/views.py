@@ -69,7 +69,14 @@ class CreateStoryView(APIView):
 
 class DeleteStoriesAfter24Hours(APIView):
     def get(self, request):
-        Stories.objects.filter(
-            created_at__lte=timezone.now() - timedelta(days=1)
-        ).delete()
-        return Response({"message": "Stories older than 24 hours have been deleted."})
+        if Stories.objects.filter(
+            reated_at__lte=timezone.now() - timedelta(days=1)
+        ).exist():
+            Stories.objects.filter(
+                created_at__lte=timezone.now() - timedelta(days=1)
+            ).delete()
+            return Response(
+                {"message": "Stories older than 24 hours have been deleted."}
+            )
+
+        return Response({"message": "No stories to delete."})
