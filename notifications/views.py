@@ -14,7 +14,9 @@ class GetAllNotificationByUser(APIView):
 
     def get(self, request):
         user_id = request.user.id
-        notifications = Notifications.objects.filter(user=user_id)
+        notifications = Notifications.objects.filter(user=user_id).order_by(
+            "-created_at"
+        )
 
         pagination_class = PageNumberPagination()
         pagination_class.page_size = 10
