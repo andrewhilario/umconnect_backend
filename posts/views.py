@@ -120,7 +120,7 @@ class GetAllPostsView(APIView):
 
     def get(self, request):
         paginator = PageNumberPagination()
-        paginator.page_size = 5
+        paginator.page_size = 10
         posts = paginator.paginate_queryset(self.queryset, request)
         serializer = self.serializer_class(posts, many=True)
         return paginator.get_paginated_response(serializer.data)
