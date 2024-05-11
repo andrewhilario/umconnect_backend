@@ -20,6 +20,7 @@ class get_routes(APIView):
             "token/verify": "/token/verify/",
             "reels": "/reels/",
             "stories": "/stories/",
+            "notifications": "/notifications/",
         }
         return Response(routes)
 

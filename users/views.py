@@ -9,7 +9,8 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
 import cloudinary.uploader
-
+from notifications.utils import create_notification
+from django.db.models import Q
 
 # Serializers
 from .serializers import (
@@ -154,28 +155,41 @@ class AddandRemoveFriendView(APIView):
         if Friends.objects.filter(user=user, friend=friend).exists():
             return Response({"error": "Friend already exists"}, status=400)
 
-        add_friend = Friends.objects.create(user=user, friend=friend)
-        add_friend.save()
-
         friend_request = FriendRequests.objects.filter(
             sender=friend, receiver=user, is_accepted=False
         )
-        if friend_request.exists():
-            friend_request.first().is_accepted = True
-            friend_request.first().save()
 
-        return Response(
-            {
-                "message": "Friend added successfully",
-                "friend_id": FriendSerializer(add_friend).data,
-            },
-            status=201,
-        )
+        if friend_request.exists():
+            friend_request.update(is_accepted=True)
+
+            add_friend = Friends.objects.create(user=user, friend=friend)
+            add_friend.save()
+
+            create_notification("FRIEND_REQUEST_ACCEPTED", user, friend)
+
+            return Response(
+                {
+                    "message": "Friend added successfully",
+                    "friend_id": FriendSerializer(add_friend).data,
+                },
+                status=201,
+            )
 
     def delete(self, request, pk):
-        user = get_object_or_404(UserModel, pk=pk)
-        friend = get_object_or_404(UserModel, pk=request.data["friend_id"])
-        user.friends.remove(friend)
+        user = request.user
+        friend = get_object_or_404(UserModel, pk=pk)
+
+        if not Friends.objects.filter(user=user, friend=friend).exists():
+            return Response({"error": "Friend does not exist"}, status=400)
+
+        friend = Friends.objects.get(user=user, friend=friend)
+        friend.delete()
+
+        friend_request = FriendRequests.objects.filter(
+            sender=friend, receiver=user, is_accepted=True
+        )
+        friend_request.first().delete()
+
         return Response({"message": "Friend removed successfully"}, status=200)
 
 
@@ -217,6 +231,8 @@ class SendFriendRequestView(APIView):
         add_friend_request = FriendRequests.objects.create(sender=user, receiver=friend)
         add_friend_request.save()
 
+        create_notification("NEW_FRIEND_REQUEST", user, friend)
+
         return Response(
             {
                 "message": "Friend request sent successfully",
@@ -230,8 +246,7 @@ class RemoveFriendRequestView(APIView):
     permission_classes = [IsAuthenticated]
 
     def delete(self, request, pk):
-
-        friend_request = get_object_or_404(FriendRequests, pk=pk, sender=request.user)
+        friend_request = get_object_or_404(FriendRequests, pk=pk)
         friend_request.delete()
         return Response({"message": "Friend request removed successfully"}, status=200)
 
@@ -241,11 +256,12 @@ class FriendsListView(APIView):
 
     def get(self, request):
         user = request.user
-        friends = Friends.objects.filter(user=user)
+        friends = Friends.objects.filter(Q(user=user) | Q(friend=user))
 
         paginator = PageNumberPagination()
         paginator.page_size = 10
         page = paginator.paginate_queryset(friends, request)
+
         if page is not None:
             serializer = FriendSerializer(page, many=True)
             return paginator.get_paginated_response(serializer.data)

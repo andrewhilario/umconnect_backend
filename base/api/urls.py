@@ -17,4 +17,5 @@ urlpatterns = [
     path("posts/", include("posts.urls")),
     path("reels/", include("reels.urls")),
     path("stories/", include("stories.urls")),
+    path("notifications/", include("notifications.urls")),
 ]

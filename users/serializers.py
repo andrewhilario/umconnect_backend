@@ -47,10 +47,11 @@ class CreateUserSerializer(serializers.ModelSerializer):
 
 class FriendSerializer(serializers.ModelSerializer):
     friend = UserModelSerializer(read_only=True)
+    user = UserModelSerializer(read_only=True)
 
     class Meta:
         model = Friends
-        fields = ["friend", "added_at"]
+        fields = ["user", "friend", "added_at"]
 
 
 class FriendRequestSerializer(serializers.ModelSerializer):

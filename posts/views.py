@@ -34,6 +34,8 @@ from .models import (
 from posts import serializers
 import cloudinary.uploader
 
+from notifications.utils import create_notification
+
 
 # Create your views here.
 class CreatePostView(APIView):
@@ -191,6 +193,8 @@ class LikePostView(APIView):
             post.likes.remove(user)
             return Response(status=204)
         post.likes.add(user)
+        create_notification("POST_LIKED", user, post.user)
+
         return Response(status=204)
 
 
@@ -234,6 +238,7 @@ class CommentPostView(APIView):
                 comment=serializer.validated_data["comment"],
             )
             comments.save()
+            create_notification("POST_COMMENTED", user, post.user)
             return Response(serializer.data, status=201)
         return Response(serializer.errors, status=400)
 
@@ -274,6 +279,7 @@ class SharePostView(APIView):
             else:
                 shares = ShareModel.objects.create(user=user, post=post)
                 shares.save()
+            create_notification("POST_SHARED", user, post.user)
             return Response(serializer.data, status=201)
         return Response(serializer.errors, status=400)
 

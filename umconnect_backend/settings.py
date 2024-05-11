@@ -66,6 +66,7 @@ INSTALLED_APPS = [
     "posts",
     "reels",
     "stories",
+    "notifications",
 ]
 
 REST_FRAMEWORK = {

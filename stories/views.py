@@ -1,4 +1,6 @@
 from django.shortcuts import render
+
+from users.models import Friends
 from .serializers import StoriesSerializer, CreateStorySerializer
 from .models import Stories
 from rest_framework.views import APIView
@@ -11,6 +13,7 @@ from operator import attrgetter
 from itertools import groupby
 from datetime import timedelta
 from django.utils import timezone
+from django.db.models import Q
 
 
 class GetAllStoriesView(APIView):
@@ -19,6 +22,41 @@ class GetAllStoriesView(APIView):
     def get(self, request):
         stories = Stories.objects.all()
         stories = sorted(stories, key=lambda x: x.user.id)  # Sort stories by user's ID
+
+        grouped_stories = {}
+        for user_id, user_stories in groupby(stories, key=lambda x: x.user.id):
+            grouped_stories[user_id] = list(user_stories)
+
+        paginator = PageNumberPagination()
+        paginator.page_size = 10
+
+        # Convert grouped_stories.items() to a list of tuples before pagination
+        grouped_stories_list = list(grouped_stories.items())
+        result_page = paginator.paginate_queryset(grouped_stories_list, request)
+
+        # Extract the stories from the result page
+        flat_grouped_stories = [
+            story for _, user_stories in result_page for story in user_stories
+        ]
+
+        serializer = self.serializer_class(flat_grouped_stories, many=True)
+        return paginator.get_paginated_response(serializer.data)
+
+
+class GetAllStoriesFromFriendsView(APIView):
+    serializer_class = StoriesSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        friends = Friends.objects.filter(Q(user=request.user) | Q(friend=request.user))
+        friend_ids = list(friends.values_list("user_id", flat=True)) + list(
+            friends.values_list("friend_id", flat=True)
+        )
+
+        friends_stories = Stories.objects.filter(user_id__in=friend_ids)
+        stories = sorted(
+            friends_stories, key=lambda x: x.user.id
+        )  # Sort stories by user's ID
 
         grouped_stories = {}
         for user_id, user_stories in groupby(stories, key=lambda x: x.user.id):
