@@ -63,7 +63,7 @@ class GetAllStoriesFromFriendsView(APIView):
             grouped_stories[user_id] = list(user_stories)
 
         paginator = PageNumberPagination()
-        paginator.page_size = 10
+        paginator.page_size = 15
 
         # Convert grouped_stories.items() to a list of tuples before pagination
         grouped_stories_list = list(grouped_stories.items())
