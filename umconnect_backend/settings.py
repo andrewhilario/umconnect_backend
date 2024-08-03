@@ -67,6 +67,7 @@ INSTALLED_APPS = [
     "reels",
     "stories",
     "notifications",
+    "drf_yasg",
 ]
 
 REST_FRAMEWORK = {
